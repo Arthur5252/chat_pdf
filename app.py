@@ -17,8 +17,8 @@ app.config['SESSION_TYPE'] = 'filesystem' # Define o tipo de armazenamento da se
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10) # Define o tempo de duração da sessão
 Session(app) # inicia a sessão
 
-#cliente=OpenAI(api_key= #"Chave API Aqui")
-#modelo = "gpt-4o-mini"
+#cliente=OpenAI(api_key= "Chave API aqui")
+modelo = "gpt-4o-mini"
 
 def perguntar_ao_chatbot(pergunta,contexto):
     maximo_tentativas = 1
@@ -62,8 +62,11 @@ def index():
 
     # Primeiro, verifica se um PDF foi carregado
     if request.method == "POST":
+        print("PDF foi carregado.")
         if 'pdf_file' in request.files:  # Verifica se um arquivo PDF foi enviado
+            print("PDF foi enviado.")
             arquivo = request.files["pdf_file"]
+            print(arquivo)
             if arquivo and arquivo.filename.endswith('.pdf'):
                 caminho_pdf = f"./uploads/{arquivo.filename}"
                 arquivo.save(caminho_pdf)
@@ -72,11 +75,12 @@ def index():
                 contexto = ler_pdf(caminho_pdf)
                 session['contexto'] = contexto  # Armazena o novo contexto na sessão
                 session['nome_arquivo'] = arquivo.filename  # Atualiza o nome do arquivo na sessão
-                os.remove(caminho_pdf)  # Remove o PDF após leitura (opcional)
+                #os.remove(caminho_pdf)
                 resposta_chatbot = "PDF carregado com sucesso! Você pode fazer suas perguntas."
 
         elif request.form.get("pergunta"):  # Se uma pergunta foi feita
             pergunta = request.form.get("pergunta")  # Recebe a pergunta do usuário
+            
            
             # Verifica se já temos um contexto e uma pergunta para fazer
             if "contexto" in session and pergunta:
@@ -87,5 +91,3 @@ def index():
         nome_arquivo_pdf = session['nome_arquivo']
     return render_template("index.html", resposta=resposta_chatbot, nome_arquivo=nome_arquivo_pdf)
 
-if __name__ == "__main__":
-    app.run(debug=True)
