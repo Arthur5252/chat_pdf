@@ -1,0 +1,36 @@
+1 - Organizar o codigo.
+* remover a função de chat de dentro do arquivo app.py e colocar em um arquivo separado.
+
+2 - Quando For feito o upload do PDF será recebido uma json contendo as informações que é necessario para montar o caminho do arquivo que foi feito o upload.
+
+    Json_data = {
+                    "filename":"xxxx.pdf",
+                    "rootpaste":"C:\\inetpub\\wwwroot\\gpca\\octopus\\arquivos",
+                    "clientfolder":"93",
+                    "workbook":"ai",
+                    "subworkbook":"pdf" 
+                }
+
+3 - Montar o caminho com as informações: rootpaste + clientfolder + workbook + subworkbook + filename
+
+    EX:   C:\inetpub\wwwroot\gpca\octopus\arquivos\93\ai\pdf\xxxx.pdf
+
+4 - Acessar este caminho e começar o processo de ler o PDF.
+
+5 - carregar o texo do PDF em uma variavel "contexto".
+
+    * - caso haja o upload de um novo PDF, apagar o Arquivo PDF anterior.
+
+    * - começar novamente o processo de ler o PDF, porém será necessario subscrever o conteudo da variavel contexto com o novo texto de PDF.
+
+    * - carregar novamente o novo conteudo da variavel contexto na função de chatpdf.
+
+6 - Criar uma rota /chatpdf que receberá a função de chatpdf recebendo como parametro o contexto e a pergunta.
+
+    a pergunta virá em um json como nos outros bots do octopus
+
+7 - gerar o response_data com o resultado da função de chatPDF
+
+
+** Gerar ambiente virtual
+** Gerar arquivo txt de logging
