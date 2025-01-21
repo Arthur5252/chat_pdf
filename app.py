@@ -22,9 +22,11 @@ def chatbot(cod_cliente, nome_arquivo):
     url_recebida = request.url
     logging.info(f"URL recebida: {url_recebida}")
 
+    logging.info(f"Cliente: {cod_cliente}, Arquivo: {nome_arquivo}")
+
     # Monta o caminho completo para o arquivo
     caminho_arquivo = os.path.join(caminho_base, str(cod_cliente), 'ai', 'pdf', nome_arquivo)
-    logging.info(caminho_arquivo)
+    logging.info(f'caminho_arquivo: {caminho_arquivo}')
 
     try:
         logging.info("Recebida requisição para interação com o chatbot.")
@@ -37,6 +39,7 @@ def chatbot(cod_cliente, nome_arquivo):
 
         # Caso o corpo da requisição não seja JSON, verificamos se o campo "msg" está como parâmetro de formulário
         prompt = json_data['msg'] if json_data else request.form.get('msg')
+        logging.info(f'msg: {prompt}')
 
         # Verifica se o caminho do arquivo existe
         if not os.path.exists(caminho_arquivo):
