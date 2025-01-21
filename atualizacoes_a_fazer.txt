@@ -34,3 +34,5 @@
 
 ** Gerar ambiente virtual
 ** Gerar arquivo txt de logging
+
+http://192.168.38.85:59049/93/chat/pdf/nome_arquivo.pdf - pathvar

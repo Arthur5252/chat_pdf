@@ -1,0 +1,7 @@
+2025-01-21 11:50:14,517 - WARNING -  * Debugger is active!
+2025-01-21 11:50:14,519 - INFO -  * Debugger PIN: 130-129-644
+2025-01-21 11:50:15,772 - INFO - URL recebida: http://localhost:5000/93/chat/pdf/nome_arquivo.pdf
+2025-01-21 11:50:15,772 - INFO - C:/inetpub/wwwroot/gpca/octopus/arquivos\93\ai\pdf\nome_arquivo.pdf
+2025-01-21 11:50:15,772 - INFO - Recebida requisição para interação com o chatbot.
+2025-01-21 11:50:15,772 - WARNING - Arquivo não encontrado: C:/inetpub/wwwroot/gpca/octopus/arquivos\93\ai\pdf\nome_arquivo.pdf
+2025-01-21 11:50:15,772 - INFO - 127.0.0.1 - - [21/Jan/2025 11:50:15] "[33mPOST /93/chat/pdf/nome_arquivo.pdf HTTP/1.1[0m" 404 -
