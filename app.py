@@ -1,93 +1,90 @@
-from flask import Flask, request, render_template, session
-from flask_session import Session
-from datetime import timedelta
-from openai import OpenAI
+from flask import Flask, request, render_template, session, jsonify
 from le_pdf import *
-import PyPDF2
-import time
+from bot import *
 import os
 
-# O Codigo recebe um arquivo PDF do usuário, extrai todo o texto e guarda em uma variável, esta variável será utilizada como contexto para as respostas do Chatbot. 
-# Para que o usuário consiga fazer diversas perguntas ao mesmo PDF estou utilizando o modulo Session do Flask, desta forma eu consigo gerenciar quanto tempo vamos # armazenar o contexto do PDF atual.
-# Para realizar outras perguntas a outros arquivos PDF o usuário pode simplesmente fazer o upload de um novo arquivo pdf, desta forma nos subescrevemos o contexto # antigo e substituimos pelo contexto novo do novo pdf.
-
 app = Flask(__name__)
-app.secret_key = 'octopus'
-app.config['SESSION_TYPE'] = 'filesystem' # Define o tipo de armazenamento da sessão, pode ser alterado para escalar a aplicação
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10) # Define o tempo de duração da sessão
-Session(app) # inicia a sessão
 
-#cliente=OpenAI(api_key= "Chave API aqui")
-modelo = "gpt-4o-mini"
+# Variável global para armazenar o último caminho do arquivo processado
+ultimo_arquivo = None
 
-def perguntar_ao_chatbot(pergunta,contexto):
-    maximo_tentativas = 1
-    repeticao = 0
-    while True:
-        try:
-            prompt_do_sistema = f"""
-            Você é um assistente que responde perguntas com base em um PDF.
-            use o contexto abaixo para responder as perguntas.
-            {contexto}
-            """
-            response = cliente.chat.completions.create(
-                messages=[
-                    {
-                        "role": "system",
-                        "content": prompt_do_sistema
-                    },
-                    {
-                        "role": "user",
-                        "content": pergunta
-                    }
-                ],
-                temperature= 0.7,
-                max_tokens=500,
-                top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0,
-                model=modelo
-            )
-            return response.choices[0].message.content
-        except Exception as erro:
-            repeticao += 1
-            if repeticao >= maximo_tentativas:
-                return "Erro no GPT: %s" % erro
-            time.sleep(1)
+@app.route("/montar_caminho", methods=["POST"])
+def montar_caminho():
+    global ultimo_arquivo  # Para acessar e modificar a variável global
+    try:
+        # Verifica se os dados estão no formato JSON
+        json_data = request.get_json()
+        if not json_data:
+            return jsonify({"erro": "Requisição inválida. Envie um JSON válido."}), 400
 
-@app.route("/", methods=["GET", "POST"])
-def index():
-    resposta_chatbot = ""
-    nome_arquivo_pdf = ""
+        # Campos obrigatórios para montar o caminho
+        required_fields = ['filename', 'rootpaste', 'clientefolder', 'workbook', 'subworkbook']
+        for field in required_fields:
+            if field not in json_data or not json_data[field]:
+                return jsonify({"erro": f"O campo '{field}' é obrigatório e não pode estar vazio."}), 400
 
-    # Primeiro, verifica se um PDF foi carregado
-    if request.method == "POST":
-        print("PDF foi carregado.")
-        if 'pdf_file' in request.files:  # Verifica se um arquivo PDF foi enviado
-            print("PDF foi enviado.")
-            arquivo = request.files["pdf_file"]
-            print(arquivo)
-            if arquivo and arquivo.filename.endswith('.pdf'):
-                caminho_pdf = f"./uploads/{arquivo.filename}"
-                arquivo.save(caminho_pdf)
+        # Captura os dados do JSON
+        filename = json_data['filename']
+        rootpaste = json_data['rootpaste']
+        clientfolder = json_data['clientefolder']
+        workbook = json_data['workbook']
+        subworkbook = json_data['subworkbook']
 
-                # Lê o PDF e armazena o texto na sessão
-                contexto = ler_pdf(caminho_pdf)
-                session['contexto'] = contexto  # Armazena o novo contexto na sessão
-                session['nome_arquivo'] = arquivo.filename  # Atualiza o nome do arquivo na sessão
-                #os.remove(caminho_pdf)
-                resposta_chatbot = "PDF carregado com sucesso! Você pode fazer suas perguntas."
+        # Monta o caminho do novo arquivo
+        monta_caminho = os.path.join(rootpaste, clientfolder, workbook, subworkbook, filename)
 
-        elif request.form.get("pergunta"):  # Se uma pergunta foi feita
-            pergunta = request.form.get("pergunta")  # Recebe a pergunta do usuário
-            
-           
-            # Verifica se já temos um contexto e uma pergunta para fazer
-            if "contexto" in session and pergunta:
-                resposta_chatbot = perguntar_ao_chatbot(pergunta, session['contexto'])  # Obtém a resposta
+        # Se houver um arquivo processado anteriormente, apaga-o
+        if ultimo_arquivo and os.path.exists(ultimo_arquivo):
+            os.remove(ultimo_arquivo)
 
-    # Verifica se o nome do arquivo está na sessão
-    if "nome_arquivo" in session:
-        nome_arquivo_pdf = session['nome_arquivo']
-    return render_template("index.html", resposta=resposta_chatbot, nome_arquivo=nome_arquivo_pdf)
+        # Atualiza o último arquivo processado
+        ultimo_arquivo = monta_caminho
 
+        # Retorna o caminho montado
+        return jsonify({"caminho": monta_caminho})
+
+    except Exception as e:
+        return jsonify({"erro": f"Ocorreu um erro inesperado: {str(e)}"}), 500
+
+
+# Endpoint para interação com o chatbot
+@app.route("/chatPDF", methods=["POST"])
+def chatbot():
+    try:
+        # Verifica se os dados estão no formato JSON
+        json_data = request.get_json()
+        if not json_data:
+            return jsonify({"erro": "Requisição inválida. Envie um JSON válido."}), 400
+
+        # Campos obrigatórios para o chatbot
+        required_fields = ['caminho', 'msg']
+        for field in required_fields:
+            if field not in json_data or not json_data[field]:
+                return jsonify({"erro": f"O campo '{field}' é obrigatório e não pode estar vazio."}), 400
+
+        # Captura os dados do JSON
+        caminho = json_data['caminho']
+        prompt = json_data['msg']
+
+        # Verifica se o caminho do arquivo existe
+        if not os.path.exists(caminho):
+            return jsonify({"erro": f"O arquivo '{caminho}' não foi encontrado."}), 404
+
+        # Lê o conteúdo do PDF
+        contexto = ler_pdf(caminho)
+
+        # Valida se o conteúdo do PDF foi extraído
+        if not contexto:
+            return jsonify({"erro": "Falha ao ler o conteúdo do PDF. Verifique o arquivo."}), 500
+
+        # Pergunta ao chatbot com o contexto extraído
+        resposta_chatbot = perguntar_ao_chatbot(prompt, contexto)
+
+        # Retorna a resposta do chatbot
+        response_data = {
+            "resposta_gpt": resposta_chatbot.replace("\n", "")
+        }
+        return jsonify(response_data)
+
+    except Exception as e:
+        return jsonify({"erro": f"Ocorreu um erro inesperado: {str(e)}"}), 500
