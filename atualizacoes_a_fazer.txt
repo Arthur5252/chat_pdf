@@ -1,4 +1,5 @@
 1 - Organizar o codigo.
+
 * remover a função de chat de dentro do arquivo app.py e colocar em um arquivo separado.
 
 2 - Quando For feito o upload do PDF será recebido uma json contendo as informações que é necessario para montar o caminho do arquivo que foi feito o upload.
