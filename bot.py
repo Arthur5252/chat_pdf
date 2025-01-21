@@ -1,11 +1,9 @@
 from openai import OpenAI
 from le_pdf import *
-import PyPDF2
 import time
-import os
 
 def perguntar_ao_chatbot(pergunta,contexto):
-    #cliente=OpenAI(api_key= "Chave API aqui")
+    cliente=OpenAI(api_key= "Chave API aqui")
     modelo = "gpt-4o-mini"
     maximo_tentativas = 1
     repeticao = 0
